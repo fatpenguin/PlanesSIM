@@ -66,3 +66,65 @@ planes_status instantiate_planes(const size_t number, struct planes_t **planes) 
     *planes = temp;
     return SUCCESS;
 }
+
+
+planes_status destroy_planes(struct planes_t **planes) {
+    if (*planes == NULL) {
+        PLANE_ERR_NUM = EMPTY_PLANES_POINTER;
+        return ERROR;
+    }
+    free(*planes);
+    *planes = NULL;
+    return SUCCESS;
+}
+/// [END] MEMORY ALLOCATION CODE
+
+/// BOOKING CODE
+planes_status book_planes(const int8_t booker_id, const char *names[], size_t number, struct planes_t **planes) {
+    struct planes_t *temp = *planes;
+    if (number > temp->available) {
+        PLANE_ERR_NUM = INVALID_NBR_BOOKING;
+        return ERROR;
+    }
+
+    size_t index_start_search = 0;
+    for (size_t i = 0; i < number; i++) {
+        if (names[i] == NULL) {
+            PLANE_ERR_NUM = INVALID_NAME_POINTER;
+            return ERROR;
+        }
+
+        int found = 0;
+        for (size_t j = index_start_search; j < temp->nbr_planes; j++) {
+            if (!temp->used[j]) {
+                strncpy(temp->names[j], names[i], NAME_MAX_LENGTH - 1);
+                temp->names[j][NAME_MAX_LENGTH - 1] = '\0';
+                index_start_search = j + 1;
+                temp->used[j] = true;
+                temp->booker_id[j] = booker_id;
+                temp->available--;
+                found = 1;
+                break;
+            }
+        }
+
+        if (!found) {
+            PLANE_ERR_NUM = INVALID_NBR_BOOKING;
+            return ERROR;
+        }
+    }
+
+    return SUCCESS;
+}
+/// [END] BOOKING CODE
+/// PLANE UPDATE
+planes_status update_planes(struct planes_t *planes, int delta_t) {
+    if (planes == NULL) {
+        PLANE_ERR_NUM = EMPTY_PLANES_POINTER;
+        return ERROR;
+    }
+    for (size_t i = 0; i < planes->nbr_planes; i++) {
+        planes->distance[i] -= planes->speed[i] * delta_t & -(int)planes->used[i];
+    }
+    return SUCCESS;
+}
